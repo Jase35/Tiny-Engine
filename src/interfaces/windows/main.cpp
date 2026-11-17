@@ -6,23 +6,8 @@
 
 #include "app.hpp"
 
-/*
-FOR ESP32
-
-#include "esp_pthread.h"
-
-static void configureWorker(unsigned index){
-    esp_pthread_cfg_t cfg = esp_pthread_get_default_config();
-    cfg.stack_size = 8192;
-    cfg.pin_to_core = index % portNUM_PROCESSORS; // app_main runs on core 0, so worker 1 goes to core 1
-    cfg.prio = 5;
-    esp_pthread_set_cfg(&cfg);
-}
-
-App app(2, configureWorker);
-*/
-
 int main(int argc, char** argv){
+    //const int W = 1920, H = 1080;
     const int W = 640, H = 480;
     //const int W = 320, H = 240;
 
@@ -61,7 +46,7 @@ int main(int argc, char** argv){
         fpsFrames++;
         if(fpsTimer >= 0.5){
             char title[64];
-            SDL_snprintf(title, sizeof(title), "Pixels - %.1f FPS", fpsFrames / fpsTimer);
+            SDL_snprintf(title, sizeof(title), "Tiny Engine [%.1f FPS]", fpsFrames / fpsTimer);
             SDL_SetWindowTitle(win, title);
             fpsTimer = 0.0;
             fpsFrames = 0;
@@ -70,11 +55,6 @@ int main(int argc, char** argv){
         app.update(deltaTime);
 
         const std::vector<uint16_t>& pixels = app.render(0x0000, W, H);
-
-        /*std::vector<uint16_t> pixels(W * H);
-        for(int i = 0; i < pixels.size(); i++){
-            pixels[i] = 0xFFFF;
-        }*/
 
         SDL_UpdateTexture(tex, nullptr, pixels.data(), W * sizeof(uint16_t));
         SDL_RenderClear(ren);

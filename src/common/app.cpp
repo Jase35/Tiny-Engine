@@ -1,12 +1,12 @@
 #include "app.hpp"
-#include "engine/assets/model.hpp"
+#include "assets/models.hpp"
 
 #include <algorithm>
 #include <cmath>
 
 App::App(unsigned cores, WorkerPool::ConfigureThread configureThread)
     : workers(cores, configureThread){
-    miku = package::load(MIKU, MIKU_SIZE);
+    model = package::load(YUU, YUU_SIZE);
 
     Texture texture = {
         4, 4,
@@ -32,13 +32,14 @@ App::App(unsigned cores, WorkerPool::ConfigureThread configureThread)
     // Demo skeleton: a root bone with one child pivoting at the mesh center (0.5, 0.5).
     const uint16_t rootBone = bones::create(NO_BONE, mat4(1.0f));
     armBone = bones::create(rootBone, glm::translate(mat4(1.0f), vec3(0.5f, 0.5f, 0.0f)));
+    //armBone = bones::create(rootBone, glm::translate(mat4(1.0f), vec3(0.5f, 0.5f, 1.0f)));
     bones::updateGlobals();
     bones::setBindPose();
 
     // Size the scratch for every rendered mesh's vertices now, so rendering never reallocates it.
     size_t totalVertices = 0;
-    for(size_t i = 0; i < miku.meshCount; i++){
-        totalVertices += resources::meshes[miku.firstMesh + i].vertices.size();
+    for(size_t i = 0; i < model.meshCount; i++){
+        totalVertices += resources::meshes[model.firstMesh + i].vertices.size();
     }
     scratch.reserve(totalVertices);
 }
@@ -104,10 +105,10 @@ const std::vector<uint16_t>& App::render(uint16_t defaultColor, int width, int h
         height
     );*/
 
-    ModelData mikuData;
+    ModelData modelData;
     // Model is ~2 units tall with feet at y = 0: center it vertically, place it in front of the camera, and spin it.
-    mikuData.modelMatrix = glm::translate(mat4(1.0f), vec3(0.0f, -1.8f, -0.75f))
-        * glm::rotate(mat4(1.0f), time, vec3(0.0f, 1.0f, 0.0f));
+    //modelData.modelMatrix = glm::translate(mat4(1.0f), vec3(0.0f, -1.8f, -0.75f)) * glm::rotate(mat4(1.0f), time, vec3(0.0f, 1.0f, 0.0f));
+    modelData.modelMatrix = glm::translate(mat4(1.0f), vec3(0.0f, 0.25f, -2.5f)) * glm::rotate(mat4(1.0f), time, vec3(0.0f, 1.0f, 0.0f));
 
     const unsigned workerCount = workers.size();
     renderer::ScreenVertex* screenVertices = scratch.vertices.data();
@@ -121,13 +122,13 @@ const std::vector<uint16_t>& App::render(uint16_t defaultColor, int width, int h
         std::fill(zBuffer.begin() + clearBegin, zBuffer.begin() + clearEnd, renderer::DEPTH_CLEAR);
 
         size_t offset = 0;
-        for(size_t i = 0; i < miku.meshCount; i++){
-            const Mesh& mesh = resources::meshes[miku.firstMesh + i];
+        for(size_t i = 0; i < model.meshCount; i++){
+            const Mesh& mesh = resources::meshes[model.firstMesh + i];
             const size_t count = mesh.vertices.size();
             renderer::shadeVertices(
                 mesh,
                 globalData,
-                mikuData,
+                modelData,
                 width,
                 height,
                 screenVertices + offset,
@@ -143,9 +144,9 @@ const std::vector<uint16_t>& App::render(uint16_t defaultColor, int width, int h
     workers.run([&](unsigned worker){
         const renderer::RowSet rows{static_cast<int>(worker), static_cast<int>(workerCount)};
         size_t offset = 0;
-        for(size_t i = 0; i < miku.meshCount; i++){
-            const Mesh& mesh = resources::meshes[miku.firstMesh + i];
-            renderer::rasterizeMesh(mesh, mikuData, screenVertices + offset, colorBuffer, zBuffer, width, height, rows);
+        for(size_t i = 0; i < model.meshCount; i++){
+            const Mesh& mesh = resources::meshes[model.firstMesh + i];
+            renderer::rasterizeMesh(mesh, modelData, screenVertices + offset, colorBuffer, zBuffer, width, height, rows);
             offset += mesh.vertices.size();
         }
     });

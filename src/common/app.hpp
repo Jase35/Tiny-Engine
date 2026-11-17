@@ -39,5 +39,5 @@ class App{
     renderer::Scratch scratch; // Shaded vertices of every rendered mesh, back to back.
     float time = 0.0f;
     uint16_t armBone = NO_BONE;
-    package::LoadResult miku{};
+    package::LoadResult model{};
 };
